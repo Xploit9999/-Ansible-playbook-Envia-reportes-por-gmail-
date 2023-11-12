@@ -1,0 +1,25 @@
+---
+- name: Envia reportes al correo de los jefes 
+  mail:
+    host: "{{ servidor_correo }}" 
+    port: "{{ puerto }}"
+    username: "{{ correo_gmail }}"
+    password: "{{ password_gmail }}"
+    to: "{{ correo_jefe }}"
+    subject: "Reportes {{ ansible_date_time.date }}"
+    body: |
+      {{ ansible_managed | comment }}
+
+      Buenas noches ings, 
+
+      Envio los siguientes reportes:
+
+      {% for reportes in reporte %}
+        - {{ reportes }}
+      {% endfor %}
+
+      Atentamente,
+
+      Ansible
+    attach: "{{ adjuntos }}"
+...

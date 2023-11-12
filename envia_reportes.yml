@@ -1,0 +1,54 @@
+---
+- name: Envia reportes diarios al correo
+  hosts: all
+  gather_facts: true
+  handlers:
+    - import_tasks: handlers/main.yml
+  vars:
+    carpeta_reportes: 'files/'
+    reportes_remoto: '/tmp/reportes/'
+  vars_files:
+    - defaults/main.yml
+  tasks:
+
+  - name: Tareas locales
+    block:
+
+    - name: Valida si hay reportes antiguos
+      find:
+        paths: "{{ carpeta_reportes }}"
+        patterns: '*.log'
+        file_type: file
+        recurse: yes
+      register: reportes
+
+    - name: Elimina si encuentra reportes antiguos
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ reportes.files }}"
+
+    delegate_to: localhost
+
+  - name: Valida si hay reportes antiguos
+    find:
+      paths: "{{ reportes_remoto }}"
+      patterns: '*.log'
+      file_type: file
+      recurse: yes
+    register: reportes
+ 
+  - set_fact:
+      adjuntos: "{{ reportes.files | json_query('[].path') }}"
+
+  - set_fact:
+      reporte: "{{ adjuntos | map('basename') | list }}"
+
+  - name: Recolecta los reportes del servidor remoto
+    fetch:
+      src: "{{ item.path }}"
+      dest: "{{ carpeta_reportes }}"
+      flat: yes
+    loop: "{{ reportes.files }}"
+    notify: "Envia reportes al correo de los jefes" 
+...
